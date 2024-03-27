@@ -1,6 +1,6 @@
 import sqlite3
-
 import logging
+
 from tokens_const import MAX_USERS, MAX_SESSIONS, MAX_TOKENS_IN_SESSION
 
 
@@ -67,13 +67,14 @@ def user_in_db(user_id):
 
 
 def add_user(user_id, username):
-    if len(get_from_db('SELECT * FROM users')) < MAX_USERS:
-        if not user_in_db(user_id):
+    if not user_in_db(user_id):
+        if len(get_from_db('SELECT * FROM users')) < MAX_USERS:
             change_db(f'INSERT INTO users (chat_id, tg_username) VALUES ({user_id}, "{username}");')
             logging.info(f'Добавлен пользователь {get_username(user_id)}')
-        return True
-    logging.warning(f'В базе уже {MAX_USERS} пользователей')
-    return False
+        else:
+            logging.warning(f'В базе уже {MAX_USERS} пользователей')
+            return False
+    return True
 
 
 def get_username(user_id):

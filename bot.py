@@ -1,7 +1,7 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-
 import logging
+
 from gpt import ask_gpt
 from database import add_user, get_username, start_story, set_param, get_story_settings, get_story_history
 from tokens import check_tokens_data, start_session
@@ -19,7 +19,7 @@ main_characters = ['Гарри Поттер', 'Фродо Бэггинс', 'Ле
 settings = ['Мегаполис', 'Деревня', 'Тёмный лес', 'Луна', 'Горная пещера', 'Остров в океане', 'Параллельная вселенная']
 
 
-def create_markup(buttons: list):
+def create_markup(buttons: list[str]):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     for i in range(len(buttons)):
         if i % 2 == 0:
@@ -88,11 +88,6 @@ def start_new_story(message):
         logging.warning('Достигнут лимит пользователей бота')
 
 
-# @bot.message_handler(commands=['changesettings'])
-# def change_settings(message):
-#     bot.send_message(message.chat.id, '')
-
-
 @bot.message_handler(commands=['begin'])
 def start_writing_story(message):
     if check_tokens_data(message.chat.id, 'sessions') > 0:
@@ -128,14 +123,19 @@ def finish_story(message):
 
 @bot.message_handler(commands=['wholestory'])
 def send_whole_story(message):
-    story = get_story_history(message.chat.id)[0]
-    if len(story) < 4096:
-        bot.send_message(message.chat.id, story, reply_markup=create_markup(['/tokens', '/newstory']))
-    else:
-        logging.warning('Слишком длинная целая история')
-        for i in range(len(story) // 4096 + 1):
-            bot.send_message(message.chat.id, story[4096*i:4096*(i+1)],
-                             reply_markup=create_markup(['/tokens', '/newstory']))
+    story = get_story_history(message.chat.id)[0][0]
+    try:
+        if len(story) < 4096:
+            bot.send_message(message.chat.id, story, reply_markup=create_markup(['/tokens', '/newstory']))
+        else:
+            for i in range(len(story) // 4096 + 1):
+                bot.send_message(message.chat.id, story[4096*i:4096*(i+1)],
+                                 reply_markup=create_markup(['/tokens', '/newstory']))
+            logging.warning('Слишком длинная целая история')
+    except telebot.apihelper.ApiTelegramException:
+        bot.send_message(message.chat.id, 'Произошла непредвиденная ситуация. Возможно, твоя история получилась '
+                                          'слишком длинной для Telegram. Попробуй повторить попытку позже',
+                         reply_markup=create_markup(['/tokens', '/newstory']))
 
 
 @bot.message_handler(commands=['tokens'])
@@ -143,7 +143,7 @@ def send_tokens_info(message):
     if add_user(message.chat.id, message.from_user.username):
         bot.send_message(message.chat.id, f'У тебя осталось сессий: {check_tokens_data(message.chat.id, "sessions")}\n'
                                           'На последнюю историю ты потратил токенов: '
-                                          f'{check_tokens_data(message.chat.id, "tokens")}',
+                                          f'{MAX_TOKENS_IN_SESSION - check_tokens_data(message.chat.id, "tokens")}',
                          reply_markup=create_markup(['/newstory']))
     else:
         bot.send_message(message.chat.id, 'Извини, но на данный момент все свободные места для пользователей заняты :( '
@@ -172,7 +172,7 @@ def set_info(info):
 def text_message(message):
     if message.text in genres:
         set_param('genre', message.text, message.chat.id)
-        bot.send_message(message.chat.id, 'Такс, а теперь выбери главного героя',
+        bot.send_message(message.chat.id, 'Так-с, а теперь выбери главного героя',
                          reply_markup=create_markup(main_characters))
     elif message.text in main_characters:
         set_param('main_character', message.text, message.chat.id)
@@ -196,7 +196,7 @@ def error_message(message):
 
 
 try:
-    bot.polling()
     logging.info('Бот запущен')
+    bot.polling()
 except Exception as e:
     logging.critical(e)

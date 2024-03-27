@@ -1,6 +1,6 @@
 import requests
-
 import logging
+
 from database import get_story_settings, get_story_history, update_history
 from tokens import cut_tokens
 from tokens_const import MAX_GPT_TOKENS
