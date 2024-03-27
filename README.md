@@ -11,7 +11,7 @@
 
 ## Инструкция по запуску проекта
 - Клонируйте репозиторий
-- Добавьте необходимые библиотеки Python, зависимости прописаны в файле [requirements.txt]()
+- Добавьте необходимые библиотеки Python, зависимости прописаны в файле [requirements.txt](https://github.com/alinkalina/bot-scenarist/blob/main/requirements.txt)
 - Создайте файл `config.py` и поместите в него переменные:
   - `BOT_TOKEN` (str) - Ваш токен Телеграм бота
   - `IAM_TOKEN` (str) - Ваш iam токен для доступа к API GPT
